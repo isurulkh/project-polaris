@@ -78,19 +78,20 @@ Project Polaris is a comprehensive document intelligence system designed for **P
 
 ```bash
 # Clone repository
-git clone <your-repo-url>
+git clone https://github.com/your-username/project-polaris.git
 cd project-polaris
 
-# Create virtual environment
+# Create virtual environment (Python 3.11+ recommended)
 python3.11 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
 
 # Copy and configure environment
 cp .env.example .env
-nano .env  # Add your API keys
+nano .env  # Add your API keys and database URL
 ```
 
 ### Configuration
@@ -98,40 +99,85 @@ nano .env  # Add your API keys
 Edit `.env` file with your credentials:
 
 ```bash
-# Google Gemini API
-GOOGLE_API_KEY="your_api_key_here"
+# Google Gemini API (Required)
+GOOGLE_API_KEY="your_gemini_api_key_here"
 
-# Supabase Database
+# Supabase Database (Required)
 DATABASE_URL="postgresql://postgres:PASSWORD@db.PROJECT.supabase.co:5432/postgres"
 
 # Collection name (must match n8n workflow)
 COLLECTION_NAME="google_drive_documents"
+
+# Optional: Redis for caching
+REDIS_URL="redis://localhost:6379/0"
+
+# Optional: Environment settings
+ENVIRONMENT="development"
+LOG_LEVEL="INFO"
 ```
 
 ### Verify Setup
 
 ```bash
-# Run connection tests
+# Test database connection and API keys
 python scripts/test_connection.py
 
-# Run functionality tests
+# Expected output:
+# ✅ Database connection successful
+# ✅ Vector store accessible  
+# ✅ Google Gemini API working
+# ✅ Collection 'google_drive_documents' found with X documents
+
+# Quick functionality test
 python scripts/quick_test.py
 ```
 
 ### Run the Application
 
+#### Option 1: Development Mode (Recommended)
+
 ```bash
-# Terminal 1: Start API Server
-uvicorn src.api.main:app --reload --port 8000
+# Terminal 1: Start FastAPI server
+source venv/bin/activate
+python -m uvicorn src.api.main:app --reload --host 127.0.0.1 --port 8000
 
 # Terminal 2: Start Streamlit UI
+source venv/bin/activate
 streamlit run ui/streamlit_app.py --server.port 8501
+
+# Access the application:
+# - API Documentation: http://localhost:8000/docs
+# - Streamlit UI: http://localhost:8501
+# - System Info: http://localhost:8000/api/v1/system/info
 ```
 
-Access the application:
-- **API Documentation**: http://localhost:8000/docs
-- **Streamlit UI**: http://localhost:8501
-- **System Info**: http://localhost:8000/api/v1/system/info
+#### Option 2: Production Mode
+
+```bash
+# Start API server (production settings)
+source venv/bin/activate
+python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --workers 4
+
+# Start Streamlit (in another terminal)
+source venv/bin/activate
+streamlit run ui/streamlit_app.py --server.port 8501 --server.headless true
+```
+
+#### Option 3: Docker Compose
+
+```bash
+# Build and run all services
+docker-compose up --build
+
+# Or run in background
+docker-compose up -d --build
+
+# Access:
+# - API: http://localhost:8000
+# - UI: http://localhost:8501
+# - Prometheus: http://localhost:9090
+# - Redis: localhost:6379
+```
 
 ## 📦 Docker Deployment
 
@@ -148,32 +194,90 @@ docker run -p 8000:8000 --env-file .env polaris-api
 
 ```
 project-polaris/
-├── config/                  # Configuration management
-│   ├── settings.py         # Pydantic settings
-│   └── logging_config.py   # Logging configuration
-├── src/
-│   ├── core/               # Core components
-│   │   ├── embeddings.py   # Gemini embeddings
+├── .env.example            # Environment template
+├── .gitignore             # Git ignore patterns
+├── Architecture.md        # Detailed system architecture
+├── SETUP_GUIDE.md        # Comprehensive setup guide
+├── docker-compose.yml    # Docker orchestration
+├── Dockerfile            # API container
+├── Dockerfile.streamlit  # UI container
+├── requirements.txt      # Python dependencies
+├── config/               # Configuration management
+│   ├── __init__.py
+│   ├── settings.py       # Pydantic settings
+│   └── logging_config.py # Logging configuration
+├── src/                  # Source code
+│   ├── __init__.py
+│   ├── core/            # Core components
+│   │   ├── __init__.py
+│   │   ├── embeddings.py    # Gemini embeddings
 │   │   ├── llm.py          # Gemini LLM wrapper
 │   │   └── vector_store.py # PGVector integration
-│   ├── agents/             # Multi-agent system
+│   ├── agents/          # Multi-agent system
+│   │   ├── __init__.py
+│   │   ├── base_agent.py   # Base agent class
 │   │   ├── router_agent.py # Query routing
 │   │   ├── query_agent.py  # Information retrieval
 │   │   └── summary_agent.py# Summarization
-│   ├── rag/                # RAG pipeline
+│   ├── rag/             # RAG pipeline
+│   │   ├── __init__.py
 │   │   ├── retriever.py    # Advanced retriever
 │   │   ├── hyde.py         # HyDE implementation
 │   │   ├── reranker.py     # Cross-encoder reranking
 │   │   └── fusion.py       # Rank fusion
-│   ├── chains/             # LangChain chains
+│   ├── chains/          # LangChain chains
+│   │   ├── __init__.py
 │   │   ├── qa_chain.py     # Q&A chain
 │   │   └── summary_chain.py# Summary chain
-│   ├── prompts/            # Prompt templates
-│   └── api/                # FastAPI application
-├── ui/                     # Streamlit interface
-├── scripts/                # Utility scripts
-├── tests/                  # Test suite
-└── docs/                   # Documentation
+│   ├── prompts/         # Prompt templates
+│   │   ├── __init__.py
+│   │   ├── query_prompts.py    # Q&A prompts
+│   │   ├── summary_prompts.py  # Summary prompts
+│   │   └── agent_prompts.py    # Agent system prompts
+│   ├── tools/           # Agent tools
+│   │   ├── __init__.py
+│   │   └── search_tools.py # Search utilities
+│   ├── utils/           # Utility functions
+│   │   ├── __init__.py
+│   │   ├── cache.py        # Redis caching
+│   │   ├── metrics.py      # Prometheus metrics
+│   │   └── helpers.py      # Helper functions
+│   └── api/             # FastAPI application
+│       ├── __init__.py
+│       ├── main.py         # FastAPI app
+│       ├── dependencies.py # API dependencies
+│       └── routes/         # API routes
+│           ├── __init__.py
+│           ├── health.py   # Health endpoints
+│           ├── query.py    # Query endpoints
+│           └── summary.py  # Summary endpoints
+├── ui/                  # Streamlit interface
+│   ├── __init__.py
+│   ├── streamlit_app.py    # Main Streamlit app
+│   ├── components/         # UI components
+│   │   ├── __init__.py
+│   │   ├── chat.py        # Chat interface
+│   │   ├── sidebar.py     # Sidebar components
+│   │   └── metrics.py     # Metrics display
+│   └── styles/            # CSS styles
+│       └── main.css       # Custom styles
+├── scripts/             # Utility scripts
+│   ├── __init__.py
+│   ├── test_connection.py  # Connection tests
+│   ├── quick_test.py      # Quick functionality test
+│   └── setup_db.py       # Database setup
+├── tests/               # Test suite
+│   ├── __init__.py
+│   ├── conftest.py        # Test configuration
+│   ├── test_agents/       # Agent tests
+│   ├── test_rag/          # RAG tests
+│   ├── test_api/          # API tests
+│   └── test_utils/        # Utility tests
+├── logs/                # Log files (created at runtime)
+└── docs/                # Documentation
+    ├── api.md            # API documentation
+    ├── deployment.md     # Deployment guide
+    └── troubleshooting.md# Troubleshooting guide
 ```
 
 ## 🎯 Usage Examples
@@ -187,6 +291,8 @@ response = requests.post(
     "http://localhost:8000/api/v1/query",
     json={
         "query": "What are the key findings in Q4 reports?",
+        "chat_history": [],  # Optional conversation history
+        "filters": {},       # Optional metadata filters
         "include_sources": True,
         "include_followup": True
     }
@@ -195,6 +301,7 @@ response = requests.post(
 result = response.json()
 print(result["answer"])
 print(f"Sources: {result['num_sources']}")
+print("Follow-up questions:", result["followup_questions"])
 ```
 
 ### Generate Summary
@@ -204,44 +311,73 @@ response = requests.post(
     "http://localhost:8000/api/v1/summarize",
     json={
         "query": "Summarize all client feedback",
-        "summary_type": "executive",
-        "max_docs": 10
+        "summary_type": "executive",  # Options: brief, comprehensive, executive
+        "max_docs": 10,
+        "filters": {}  # Optional metadata filters
     }
 )
 
 result = response.json()
 print(result["summary"])
 print("Key Points:", result["key_points"])
+print("Insights:", result["insights"])
 ```
 
-### Search Documents
+### System Information
 
 ```python
-response = requests.post(
-    "http://localhost:8000/api/v1/search",
-    json={
-        "query": "financial performance",
-        "top_k": 10
-    }
-)
+response = requests.get("http://localhost:8000/api/v1/system/info")
+system_info = response.json()
 
-docs = response.json()["documents"]
-for doc in docs:
-    print(f"Rank {doc['rank']}: {doc['content'][:100]}...")
+print(f"Status: {system_info['status']}")
+print(f"Vector Store: {system_info['vector_store']['total_documents']} documents")
+print(f"Models: {system_info['models']}")
 ```
 
 ## 🧪 Testing
 
+### Run Tests
+
 ```bash
+# Activate virtual environment
+source venv/bin/activate
+
 # Run all tests
 pytest tests/ -v
 
-# Run with coverage
-pytest tests/ --cov=src --cov-report=html
+# Run with coverage report
+pytest tests/ --cov=src --cov-report=html --cov-report=term
 
-# Run specific tests
-pytest tests/test_agents/ -v
-pytest tests/test_rag/ -v
+# Run specific test categories
+pytest tests/test_agents/ -v      # Agent tests
+pytest tests/test_rag/ -v         # RAG pipeline tests  
+pytest tests/test_api/ -v         # API endpoint tests
+pytest tests/test_utils/ -v       # Utility function tests
+
+# Run tests with markers
+pytest -m "not slow" -v          # Skip slow tests
+pytest -m "integration" -v       # Run only integration tests
+```
+
+### Test Configuration
+
+Tests use the following configuration:
+- Test database: Separate Supabase project or local PostgreSQL
+- Mock API keys for Gemini (set in `tests/conftest.py`)
+- Redis: Uses fakeredis for testing
+- Fixtures: Shared test data in `tests/fixtures/`
+
+### Performance Testing
+
+```bash
+# Load testing with locust (install: pip install locust)
+locust -f tests/performance/locustfile.py --host=http://localhost:8000
+
+# Memory profiling
+python -m memory_profiler scripts/profile_memory.py
+
+# API response time testing
+python tests/performance/test_response_times.py
 ```
 
 ## 📊 Monitoring
@@ -260,14 +396,24 @@ Available metrics:
 ### Health Checks
 
 ```bash
-# Basic health
+# Basic health check
 curl http://localhost:8000/api/v1/health
 
-# Detailed health
-curl http://localhost:8000/api/v1/health/detailed
+# Response:
+# {
+#   "status": "healthy",
+#   "timestamp": "2024-01-15T10:30:00Z"
+# }
 
-# Readiness probe
-curl http://localhost:8000/api/v1/ready
+# System information (detailed health)
+curl http://localhost:8000/api/v1/system/info
+
+# Response includes:
+# - System status and uptime
+# - Vector store statistics
+# - Model information
+# - Performance metrics
+# - Cache statistics
 ```
 
 ## 🔧 Configuration Options
@@ -319,15 +465,58 @@ See `docs/deployment.md` for detailed AWS deployment guide.
 
 ## 📚 API Documentation
 
-Full API documentation available at `/docs` when running the server.
+Full interactive API documentation is available at `/docs` when running the server.
+
+### Authentication
+
+Currently, the API is open for development. In production, JWT authentication can be enabled:
+
+```bash
+# Enable authentication in .env
+ENABLE_AUTH=true
+JWT_SECRET_KEY="your-secret-key"
+JWT_ALGORITHM="HS256"
+```
+
+### Rate Limiting
+
+API endpoints are rate-limited to prevent abuse:
+- Query endpoints: 60 requests per minute
+- Summary endpoints: 30 requests per minute  
+- Health endpoints: 120 requests per minute
+
+### Error Handling
+
+All endpoints return consistent error responses:
+
+```json
+{
+  "detail": "Error description",
+  "error_code": "SPECIFIC_ERROR_CODE",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+Common HTTP status codes:
+- `200` - Success
+- `400` - Bad Request (invalid input)
+- `401` - Unauthorized (if auth enabled)
+- `422` - Validation Error
+- `429` - Rate Limit Exceeded
+- `500` - Internal Server Error
 
 ### Main Endpoints
 
-- `POST /api/v1/query` - Query documents
-- `POST /api/v1/summarize` - Generate summaries
-- `POST /api/v1/search` - Search documents
-- `GET /api/v1/system/info` - System information
-- `GET /api/v1/health` - Health check
+- `POST /api/v1/query` - Query documents with advanced RAG
+  - Request: `{"query": "string", "chat_history": [], "filters": {}, "include_sources": true, "include_followup": true}`
+  - Response: Answer with sources and follow-up questions
+- `POST /api/v1/summarize` - Generate document summaries
+  - Request: `{"query": "string", "summary_type": "comprehensive|brief|executive", "max_docs": 10, "filters": {}}`
+  - Response: Summary with key points and insights
+- `GET /api/v1/health` - Basic health check
+  - Response: `{"status": "healthy", "timestamp": "ISO-8601"}`
+- `GET /api/v1/system/info` - Detailed system information
+  - Response: System stats, model info, and performance metrics
 
 ## 🛠️ Development
 
