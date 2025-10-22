@@ -1,0 +1,937 @@
+{
+  "name": "Transform Google Drive Documents into Vector Embeddings",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "filename",
+                "value": "={{ $('Download File').item.json.name }}"
+              },
+              {
+                "name": "id",
+                "value": "={{ $('Download File').item.json.id }}"
+              },
+              {
+                "name": "mimeType",
+                "value": "={{ $('Download File').item.json.mimeType }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "6652e41a-d14a-4e17-9dcd-34df114d219a",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        -3792,
+        5680
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "id": "8ae38b72-52fd-46bc-ab47-50bebe5ac4ee",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        -3712,
+        5888
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "id": "3a6584f5-ed86-4900-9177-40ffe82d0ad3",
+      "name": "Download File",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -4592,
+        5456
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "QWIC4CtYKzvT24YI",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "7b4e792b-ab6d-4b9b-88a1-d8e51bea6853",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{$binary[\"data\"].mimeType}}",
+                    "rightValue": "application/pdf"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "09b7d7c5-5353-4719-b4e2-072e4da39948",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{$binary[\"data\"].mimeType}}",
+                    "rightValue": "text/plain"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "d2763a45-a592-47c8-868f-59dfcd17a71c",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{$binary[\"data\"].mimeType}}",
+                    "rightValue": "application/json"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "json"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "id-1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{$binary[\"data\"].mimeType}}",
+                    "rightValue": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "docx"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f8055452-b487-46c7-92fe-14b3c88d193f",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -4368,
+        5424
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "c704f48e-a1f5-4539-bde2-545862d21bc6",
+      "name": "Extract from PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        -4144,
+        5168
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "63b3a751-5726-4821-8379-72af15226584",
+      "name": "Extract from Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        -4144,
+        5360
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "id": "44a5980a-17aa-4a09-8040-a7d9804c7998",
+      "name": "Extract from JSON",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        -4144,
+        5552
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -3920,
+        5680
+      ],
+      "id": "d5e83bff-109c-4e56-bafc-898fdb19f10a",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Scr0Ia4dIlWXB3O8",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "processedFolderId",
+              "value": "1eTw0bqp7UcD92EQssGIZiRPqn09a3DzR",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "errorFolderId",
+              "value": "1RcEdWUHOQ2uY1R2bObKL6RcWIRzho9s9",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "notificationEmail",
+              "value": "YOUR_EMAIL_ADDRESS",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "sourceFolderId",
+              "value": "1mUlKJW6t8Q4V-XcvmC0K_h1LdLHzhaUE",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "597925e4-02e6-4f8d-b96c-201c8d835a17",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4816,
+        5456
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "2248f5a0-574f-441d-b35f-9444b5c3e2fb",
+      "name": "Extract from DOCX",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -4144,
+        5744
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents_2",
+          "mode": "list",
+          "cachedResultName": "documents_2"
+        },
+        "options": {
+          "queryName": "google_drive_documents"
+        }
+      },
+      "id": "b93c562d-af11-42b5-b125-875ef3e483ac",
+      "name": "Supabase Vector Store1",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -3888,
+        5456
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "VjX3uLbL1riqTzJ3",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "7415258c-a0de-4f5b-a31e-6eb2331b340a",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -5264,
+        5360
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "mimeType != 'application/vnd.google-apps.folder'",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "=1mUlKJW6t8Q4V-XcvmC0K_h1LdLHzhaUE",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "id": "a2e9ebda-2062-42b6-adaa-18d6c01255a6",
+      "name": "List All Files in Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -5040,
+        5456
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "QWIC4CtYKzvT24YI",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Download File').item.json.id }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "=1eTw0bqp7UcD92EQssGIZiRPqn09a3DzR",
+          "mode": "id"
+        }
+      },
+      "id": "3694bd63-7cb0-4278-a3ff-f57a5f1309a9",
+      "name": "Move to Processed Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -3200,
+        5264
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "QWIC4CtYKzvT24YI",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Download File').item.json.id }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "=1RcEdWUHOQ2uY1R2bObKL6RcWIRzho9s9",
+          "mode": "id"
+        }
+      },
+      "id": "e0e52b21-a316-46c9-bf51-37871ebaa0e8",
+      "name": "Move to Error Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -3200,
+        5648
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "QWIC4CtYKzvT24YI",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $json.pageContent }}",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "87ae55d2-896c-4f35-a6b0-bbe5c38e9b5c",
+      "name": "Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3424,
+        5456
+      ]
+    },
+    {
+      "parameters": {
+        "path": "30311ad6-7280-48dc-a1e1-9efddbb73ba3",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -5264,
+        5552
+      ],
+      "id": "2ff3f895-b6d5-44c8-8eaa-618948c8fe84",
+      "name": "Webhook",
+      "webhookId": "30311ad6-7280-48dc-a1e1-9efddbb73ba3"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Done",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -2976,
+        5168
+      ],
+      "id": "a34c2115-09a8-420a-b32b-2541a3c53988",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Fail",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -2976,
+        5744
+      ],
+      "id": "47c68f8a-40e5-46bb-93b2-599c9149b95a",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "subject": "Fail",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -2976,
+        5552
+      ],
+      "id": "115fadfb-a32c-4188-b5dd-eef0d45d616b",
+      "name": "Fail email",
+      "webhookId": "b9ae7c25-b7db-4091-88f3-6e399f940f8a"
+    },
+    {
+      "parameters": {
+        "subject": "Sucuss",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -2976,
+        5360
+      ],
+      "id": "9b4a0ed6-a15b-4160-afc4-464188c5dd45",
+      "name": "Sucuss email",
+      "webhookId": "a07b7549-397e-4b87-bd3a-63997345831e"
+    },
+    {
+      "parameters": {
+        "content": "🚀 WORKFLOW TRIGGERS\n\n1. Schedule Trigger: Runs every hour to check for new files\n2. Webhook: Manual trigger via HTTP GET request for on-demand processing\n\nBoth triggers start the same workflow process.",
+        "height": 240,
+        "width": 320
+      },
+      "id": "ee079842-955b-4e35-832e-1983ea5cb470",
+      "name": "Trigger Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -5632,
+        5408
+      ]
+    },
+    {
+      "parameters": {
+        "content": "⚙️ WORKFLOW CONFIGURATION\n\nCentralizes all workflow settings:\n- sourceFolderId: Google Drive folder to monitor\n- processedFolderId: Where successful files go\n- errorFolderId: Where failed files go\n- notificationEmail: Email for status updates\n\nAll other nodes reference these values.",
+        "height": 232,
+        "width": 260
+      },
+      "id": "6c138cc7-ce8e-46d3-920e-dfde98fd6e26",
+      "name": "Configuration Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4912,
+        5616
+      ]
+    },
+    {
+      "parameters": {
+        "content": "📥 FILE DISCOVERY & DOWNLOAD\n\n1. List All Files in Folder: Queries Google Drive for all files in source folder\n2. Download File: Downloads each file as binary data for processing\n\nProcesses all files found in the source folder.",
+        "height": 260,
+        "width": 340
+      },
+      "id": "62d7bd77-3bee-415a-b532-d3d6ee48f789",
+      "name": "File Download Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -5136,
+        5104
+      ]
+    },
+    {
+      "parameters": {
+        "content": "🔀 FILE TYPE ROUTING\n\nSwitch Node: Routes files based on MIME type\n- PDF → Extract from PDF\n- TXT → Extract from Text\n- JSON → Extract from JSON\n- DOCX → Extract from DOCX\n\nEnsures correct extraction method per file type.",
+        "height": 248,
+        "width": 308
+      },
+      "id": "78549ee1-de6f-4221-b670-a5d3fce50880",
+      "name": "File Type Routing Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4560,
+        5632
+      ]
+    },
+    {
+      "parameters": {
+        "content": "📄 CONTENT EXTRACTION\n\nExtract From File nodes:\n- Extract from PDF: Parses PDF documents\n- Extract from Text: Reads plain text files\n- Extract from JSON: Parses JSON data\n- Extract from DOCX: Extracts Word document content\n\nConverts binary files to text for processing.",
+        "height": 252,
+        "width": 308
+      },
+      "id": "8df1bd22-6d49-4937-85cd-67321644c3d7",
+      "name": "Content Extraction Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4272,
+        4880
+      ]
+    },
+    {
+      "parameters": {
+        "content": "🧠 VECTOR EMBEDDING PIPELINE\n\n1. Recursive Character Text Splitter: Chunks text into 1000-char segments with 100-char overlap\n2. Default Data Loader: Processes documents with metadata (filename, ID, mimeType)\n3. Embeddings Google Gemini: Generates vector embeddings using Gemini model\n4. Supabase Vector Store: Stores embeddings in documents_2 table\n\nCreates searchable vector database from documents.",
+        "height": 340,
+        "width": 380
+      },
+      "id": "6d2ba580-1e1c-4798-a0f5-61bc18c862c2",
+      "name": "Vector Processing Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3936,
+        6048
+      ]
+    },
+    {
+      "parameters": {
+        "content": "✅ VALIDATION & ERROR HANDLING\n\nCheck Node (IF): Validates processing success\n- TRUE path: pageContent exists → Success\n- FALSE path: pageContent missing → Error\n\nRoutes to appropriate folder and notification based on result.",
+        "height": 228,
+        "width": 328
+      },
+      "id": "6e13feb4-f4bd-49ad-8609-7e77bc5af2f3",
+      "name": "Error Handling Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3632,
+        5200
+      ]
+    },
+    {
+      "parameters": {
+        "content": "📁 FILE MANAGEMENT\n\n1. Move to Processed Folder: Moves successfully processed files to processed folder\n2. Move to Error Folder: Moves failed files to error folder\n\nKeeps source folder clean - only unprocessed files remain for next run.",
+        "height": 224,
+        "width": 360
+      },
+      "id": "af752411-50e1-4f9d-840f-8e55076c8980",
+      "name": "File Management Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3392,
+        5808
+      ]
+    },
+    {
+      "parameters": {
+        "content": "📧 NOTIFICATIONS & RESPONSES\n\n1. Success email: Sends success notification\n2. Fail email: Sends error notification\n3. Respond to Webhook: Returns \"Done\" for success\n4. Respond to Webhook1: Returns \"Fail\" for errors\n\nProvides feedback on processing status.",
+        "height": 252,
+        "width": 376
+      },
+      "id": "4aaf70e8-13c9-411e-9d6e-47424017c7d9",
+      "name": "Notification Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3072,
+        4896
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Extract from PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from DOCX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from PDF": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from JSON": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from Text": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Download File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from DOCX": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "List All Files in Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List All Files in Folder": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check": {
+      "main": [
+        [
+          {
+            "node": "Move to Processed Folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Move to Error Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "List All Files in Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to Processed Folder": {
+      "main": [
+        [
+          {
+            "node": "Sucuss email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to Error Folder": {
+      "main": [
+        [
+          {
+            "node": "Fail email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "055c3b06-1854-40e0-9d48-58828a8e2f9e",
+  "meta": {
+    "templateId": "3647",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4a9a069eed031c80d6f9d9da600c16660f068d240dfc344fad14234abca9a569"
+  },
+  "id": "6SrAZCNsoUQyGwLB",
+  "tags": []
+}
