@@ -588,4 +588,4 @@ Contributions welcome! Please:
 ---
 
 **Project Polaris** - Advanced Document Intelligence System
-Made with ❤️ for WireApps AI Agent Engineer Assessment
+Made with ❤️ 
